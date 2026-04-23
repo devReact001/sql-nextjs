@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { queryCategories, allQueries } from "@/data/queries";
 import { mysqlQueryCategories, allMySQLQueries } from "@/data/mysql-queries";
 import { cassandraQueryCategories, allCassandraQueries } from "@/data/cassandra-queries";
+import { elasticsearchQueryCategories, allElasticsearchQueries } from "@/data/elasticsearch-queries";
 
 interface QueryResult {
   columns: string[];
@@ -13,12 +14,13 @@ interface QueryResult {
   error?: string;
 }
 
-type DB = "postgresql" | "mysql" | "cassandra";
+type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch";
 
-// Cassandra queries use `cql` field, others use `sql`
-const getQueryText = (q: any) => q.cql ?? q.sql ?? "";
+// Cassandra queries use `cql`, Elasticsearch uses `esQuery`, others use `sql`
+const getQueryText = (q: any) => q.cql ?? q.esQuery ?? q.sql ?? "";
 const getApiRoute = (q: any, db: DB) => {
   if (db === "cassandra") return q.apiPath ?? "/api/cassandra/query";
+  if (db === "elasticsearch") return q.apiPath ?? "/api/elasticsearch/query";
   return db === "mysql" ? "/api/mysql" : "/api/query";
 };
 
@@ -49,6 +51,15 @@ const DB_CONFIG = {
     categories: cassandraQueryCategories,
     allQueries: allCassandraQueries,
     hint: "CQL SELECT queries — parameters auto-filled with defaults",
+  },
+  elasticsearch: {
+    label: "Elasticsearch",
+    color: "#f04e98",
+    accent: "#ff6eb4",
+    icon: "🔎",
+    categories: elasticsearchQueryCategories,
+    allQueries: allElasticsearchQueries,
+    hint: "JSON DSL query body — edit the JSON and run",
   },
 };
 
@@ -92,11 +103,31 @@ export default function SQLEditorPage() {
     setLoading(true);
     setPage(0);
     const isCassandra = activeDB === "cassandra";
+    const isElasticsearch = activeDB === "elasticsearch";
     try {
+      let reqBody: any;
+      if (isElasticsearch) {
+        // sql field contains the JSON DSL body; also pass the index from active query
+        const activeQ = dbConf.allQueries.find((q) => q.id === activeQueryId) as any;
+        let parsedBody: any;
+        try {
+          parsedBody = JSON.parse(sql);
+        } catch {
+          setResult({ columns: [], rows: [], rowCount: 0, executionTime: 0, error: "Invalid JSON — check the query body" });
+          setLoading(false);
+          return;
+        }
+        reqBody = { body: parsedBody, index: activeQ?.index ?? "candidates" };
+      } else if (isCassandra) {
+        reqBody = { cql: sql };
+      } else {
+        reqBody = { sql };
+      }
+
       const res = await fetch(activeApiPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isCassandra ? { cql: sql } : { sql }),
+        body: JSON.stringify(reqBody),
       });
       const data = await res.json();
       setResult(data);
@@ -105,7 +136,7 @@ export default function SQLEditorPage() {
     } finally {
       setLoading(false);
     }
-  }, [sql, activeApiPath, activeDB]);
+  }, [sql, activeApiPath, activeDB, activeQueryId, dbConf]);
 
   const selectQuery = (q: any) => {
     setActiveQueryId(q.id);
@@ -175,6 +206,13 @@ export default function SQLEditorPage() {
             {activeDB === "cassandra" && (
               <div style={{ padding: "8px 16px", background: "#0c2233", borderBottom: "1px solid #334155", fontSize: 11, color: "#22b5d4" }}>
                 🪐 Parameters like <code style={{ background: "#0f172a", padding: "1px 4px", borderRadius: 3 }}>:department_id</code> are auto-filled with defaults
+              </div>
+            )}
+
+            {/* Elasticsearch info banner */}
+            {activeDB === "elasticsearch" && (
+              <div style={{ padding: "8px 16px", background: "#2a0a1e", borderBottom: "1px solid #334155", fontSize: 11, color: "#ff6eb4" }}>
+                🔎 Edit the JSON query body directly · Aggregations display as table rows
               </div>
             )}
 
@@ -252,7 +290,7 @@ export default function SQLEditorPage() {
             <textarea value={sql} onChange={(e) => setSql(e.target.value)}
               onKeyDown={(e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); runQuery(); } }}
               spellCheck={false}
-              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
+              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
               style={{ width: "100%", height: 170, background: "#0f172a", border: "1px solid #334155", borderRadius: 12, padding: 16, color: "#e2e8f0", fontFamily: "'Cascadia Code','Fira Code','Courier New',monospace", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
             <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Ctrl+Enter to run · {dbConf.hint}</div>
           </div>
