@@ -6,6 +6,7 @@ import { mysqlQueryCategories, allMySQLQueries } from "@/data/mysql-queries";
 import { cassandraQueryCategories, allCassandraQueries } from "@/data/cassandra-queries";
 import { elasticsearchQueryCategories, allElasticsearchQueries } from "@/data/elasticsearch-queries";
 import { redisQueryCategories, allRedisQueries } from "@/data/redis-queries";
+import { neo4jQueryCategories, allNeo4jQueries } from "@/data/neo4j-queries";
 
 interface QueryResult {
   columns: string[];
@@ -15,14 +16,15 @@ interface QueryResult {
   error?: string;
 }
 
-type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch" | "redis";
+type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch" | "redis" | "neo4j";
 
-// Cassandra uses `cql`, Elasticsearch uses `esQuery`, Redis uses `command`, others use `sql`
-const getQueryText = (q: any) => q.cql ?? q.esQuery ?? q.command ?? q.sql ?? "";
+// Cassandra uses `cql`, Elasticsearch uses `esQuery`, Redis uses `command`, Neo4j uses `cypher`, others use `sql`
+const getQueryText = (q: any) => q.cql ?? q.esQuery ?? q.command ?? q.cypher ?? q.sql ?? "";
 const getApiRoute = (q: any, db: DB) => {
   if (db === "cassandra") return q.apiPath ?? "/api/cassandra/query";
   if (db === "elasticsearch") return q.apiPath ?? "/api/elasticsearch/query";
   if (db === "redis") return q.apiPath ?? "/api/redis/query";
+  if (db === "neo4j") return q.apiPath ?? "/api/neo4j/query";
   return db === "mysql" ? "/api/mysql" : "/api/query";
 };
 
@@ -72,6 +74,15 @@ const DB_CONFIG = {
     allQueries: allRedisQueries,
     hint: "Redis commands — e.g. GET key · HGETALL key · KEYS *",
   },
+  neo4j: {
+    label: "Neo4j",
+    color: "#018bff",
+    accent: "#40a9ff",
+    icon: "🕸️",
+    categories: neo4jQueryCategories,
+    allQueries: allNeo4jQueries,
+    hint: "Cypher queries — MATCH (n)-[:REL]->(m) RETURN n",
+  },
 };
 
 export default function SQLEditorPage() {
@@ -117,6 +128,7 @@ export default function SQLEditorPage() {
     const isElasticsearch = activeDB === "elasticsearch";
     try {
       const isRedis = activeDB === "redis";
+      const isNeo4j = activeDB === "neo4j";
       let reqBody: any;
       if (isElasticsearch) {
         const activeQ = dbConf.allQueries.find((q) => q.id === activeQueryId) as any;
@@ -133,6 +145,8 @@ export default function SQLEditorPage() {
         reqBody = { cql: sql };
       } else if (isRedis) {
         reqBody = { command: sql };
+      } else if (isNeo4j) {
+        reqBody = { cypher: sql };
       } else {
         reqBody = { sql };
       }
@@ -143,7 +157,8 @@ export default function SQLEditorPage() {
         body: JSON.stringify(reqBody),
       });
       const data = await res.json();
-      setResult(data);
+      // Guarantee columns is always a plain JS array
+      setResult({ ...data, columns: Array.from(data.columns ?? []), rows: Array.from(data.rows ?? []) });
     } catch {
       setResult({ columns: [], rows: [], rowCount: 0, executionTime: 0, error: "Network error" });
     } finally {
@@ -236,6 +251,20 @@ export default function SQLEditorPage() {
               </div>
             )}
 
+            {/* Neo4j info banner */}
+            {activeDB === "neo4j" && (
+              <div style={{ padding: "8px 16px", background: "#001a33", borderBottom: "1px solid #334155", fontSize: 11, color: "#40a9ff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>🕸️ Cypher — <code style={{ background: "#0f172a", padding: "1px 4px", borderRadius: 3 }}>MATCH (n)-[:REL]→(m)</code></span>
+                <button onClick={async () => {
+                  const r = await fetch("/api/neo4j/seed", { method: "POST" });
+                  const d = await r.json();
+                  alert(d.success ? `✅ Graph seeded! ${d.total} operations completed.` : `⚠️ Seeded with ${d.errors} errors. Check console.`);
+                }} style={{ background: "#018bff", border: "none", borderRadius: 4, padding: "3px 8px", color: "white", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>
+                  Seed Graph
+                </button>
+              </div>
+            )}
+
             {activeDB === "postgresql" && tables.length > 0 && (
               <div style={{ padding: "10px 16px", borderBottom: "1px solid #334155" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Tables</div>
@@ -310,7 +339,7 @@ export default function SQLEditorPage() {
             <textarea value={sql} onChange={(e) => setSql(e.target.value)}
               onKeyDown={(e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); runQuery(); } }}
               spellCheck={false}
-              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : activeDB === "redis" ? "Type a Redis command... e.g. GET key · HGETALL key (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
+              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : activeDB === "redis" ? "Type a Redis command... e.g. GET key · HGETALL key (Ctrl+Enter to run)" : activeDB === "neo4j" ? "Write your Cypher query... MATCH (n)-[:REL]->(m) RETURN n (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
               style={{ width: "100%", height: 170, background: "#0f172a", border: "1px solid #334155", borderRadius: 12, padding: 16, color: "#e2e8f0", fontFamily: "'Cascadia Code','Fira Code','Courier New',monospace", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
             <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Ctrl+Enter to run · {dbConf.hint}</div>
           </div>
