@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
     "@supabase/supabase-js": "^2.45.0",
     "cassandra-driver": "^4.8.0",
     "mysql2": "^3.22.2",

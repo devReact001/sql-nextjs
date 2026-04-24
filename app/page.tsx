@@ -7,6 +7,7 @@ import { cassandraQueryCategories, allCassandraQueries } from "@/data/cassandra-
 import { elasticsearchQueryCategories, allElasticsearchQueries } from "@/data/elasticsearch-queries";
 import { redisQueryCategories, allRedisQueries } from "@/data/redis-queries";
 import { neo4jQueryCategories, allNeo4jQueries } from "@/data/neo4j-queries";
+import { influxQueryCategories, allInfluxQueries } from "@/data/influxdb-queries";
 
 interface QueryResult {
   columns: string[];
@@ -16,15 +17,16 @@ interface QueryResult {
   error?: string;
 }
 
-type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch" | "redis" | "neo4j";
+type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch" | "redis" | "neo4j" | "influxdb";
 
-// Cassandra uses `cql`, Elasticsearch uses `esQuery`, Redis uses `command`, Neo4j uses `cypher`, others use `sql`
-const getQueryText = (q: any) => q.cql ?? q.esQuery ?? q.command ?? q.cypher ?? q.sql ?? "";
+// Cassandra uses `cql`, Elasticsearch uses `esQuery`, Redis uses `command`, Neo4j uses `cypher`, InfluxDB uses `flux`, others use `sql`
+const getQueryText = (q: any) => q.cql ?? q.esQuery ?? q.command ?? q.cypher ?? q.flux ?? q.sql ?? "";
 const getApiRoute = (q: any, db: DB) => {
-  if (db === "cassandra") return q.apiPath ?? "/api/cassandra/query";
+  if (db === "cassandra")     return q.apiPath ?? "/api/cassandra/query";
   if (db === "elasticsearch") return q.apiPath ?? "/api/elasticsearch/query";
-  if (db === "redis") return q.apiPath ?? "/api/redis/query";
-  if (db === "neo4j") return q.apiPath ?? "/api/neo4j/query";
+  if (db === "redis")         return q.apiPath ?? "/api/redis/query";
+  if (db === "neo4j")         return q.apiPath ?? "/api/neo4j/query";
+  if (db === "influxdb")      return q.apiPath ?? "/api/influxdb/query";
   return db === "mysql" ? "/api/mysql" : "/api/query";
 };
 
@@ -83,6 +85,15 @@ const DB_CONFIG = {
     allQueries: allNeo4jQueries,
     hint: "Cypher queries — MATCH (n)-[:REL]->(m) RETURN n",
   },
+  influxdb: {
+    label: "InfluxDB",
+    color: "#22adf6",
+    accent: "#67d0ff",
+    icon: "📈",
+    categories: influxQueryCategories,
+    allQueries: allInfluxQueries,
+    hint: "Flux queries — from(bucket:) |> range() |> filter() |> ...",
+  },
 };
 
 export default function SQLEditorPage() {
@@ -129,6 +140,7 @@ export default function SQLEditorPage() {
     try {
       const isRedis = activeDB === "redis";
       const isNeo4j = activeDB === "neo4j";
+      const isInflux = activeDB === "influxdb";
       let reqBody: any;
       if (isElasticsearch) {
         const activeQ = dbConf.allQueries.find((q) => q.id === activeQueryId) as any;
@@ -147,6 +159,8 @@ export default function SQLEditorPage() {
         reqBody = { command: sql };
       } else if (isNeo4j) {
         reqBody = { cypher: sql };
+      } else if (isInflux) {
+        reqBody = { flux: sql };
       } else {
         reqBody = { sql };
       }
@@ -265,6 +279,20 @@ export default function SQLEditorPage() {
               </div>
             )}
 
+            {/* InfluxDB info banner */}
+            {activeDB === "influxdb" && (
+              <div style={{ padding: "8px 16px", background: "#001a26", borderBottom: "1px solid #334155", fontSize: 11, color: "#67d0ff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>📈 Flux — <code style={{ background: "#0f172a", padding: "1px 4px", borderRadius: 3 }}>from(bucket:) |&gt; range() |&gt; filter()</code></span>
+                <button onClick={async () => {
+                  const r = await fetch("/api/influxdb/seed", { method: "POST" });
+                  const d = await r.json();
+                  alert(d.success ? `✅ Seeded! ${d.pointsWritten} points written across ${d.measurements.length} measurements.` : `❌ Seed failed: ${d.error}`);
+                }} style={{ background: "#22adf6", border: "none", borderRadius: 4, padding: "3px 8px", color: "white", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>
+                  Seed Data
+                </button>
+              </div>
+            )}
+
             {activeDB === "postgresql" && tables.length > 0 && (
               <div style={{ padding: "10px 16px", borderBottom: "1px solid #334155" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Tables</div>
@@ -339,7 +367,7 @@ export default function SQLEditorPage() {
             <textarea value={sql} onChange={(e) => setSql(e.target.value)}
               onKeyDown={(e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); runQuery(); } }}
               spellCheck={false}
-              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : activeDB === "redis" ? "Type a Redis command... e.g. GET key · HGETALL key (Ctrl+Enter to run)" : activeDB === "neo4j" ? "Write your Cypher query... MATCH (n)-[:REL]->(m) RETURN n (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
+              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : activeDB === "redis" ? "Type a Redis command... e.g. GET key · HGETALL key (Ctrl+Enter to run)" : activeDB === "neo4j" ? "Write your Cypher query... MATCH (n)-[:REL]->(m) RETURN n (Ctrl+Enter to run)" : activeDB === "influxdb" ? "Write your Flux query... from(bucket:) |> range() |> filter() (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
               style={{ width: "100%", height: 170, background: "#0f172a", border: "1px solid #334155", borderRadius: 12, padding: 16, color: "#e2e8f0", fontFamily: "'Cascadia Code','Fira Code','Courier New',monospace", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
             <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Ctrl+Enter to run · {dbConf.hint}</div>
           </div>
