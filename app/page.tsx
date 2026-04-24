@@ -250,8 +250,17 @@ export default function SQLEditorPage() {
         </div>
 
         <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 11, color: "#475569" }}>
-          Connected to <span style={{ color: dbConf.accent, fontWeight: 600 }}>{dbConf.label}</span>
+        <div style={{ fontSize: 11, color: "#475569", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ color: dbConf.accent, fontWeight: 600 }}>Connected to {dbConf.label}</span>
+          <button onClick={async () => {
+            await fetch("/api/auth", { method: "DELETE" });
+            window.location.href = "/login";
+          }} style={{ background: "transparent", border: "1px solid #334155", borderRadius: 6, padding: "3px 10px", color: "#64748b", cursor: "pointer", fontSize: 11, fontFamily: "inherit", transition: "all 0.2s" }}
+            onMouseEnter={e => { (e.target as HTMLButtonElement).style.borderColor = "#ef4444"; (e.target as HTMLButtonElement).style.color = "#ef4444"; }}
+            onMouseLeave={e => { (e.target as HTMLButtonElement).style.borderColor = "#334155"; (e.target as HTMLButtonElement).style.color = "#64748b"; }}
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
