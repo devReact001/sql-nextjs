@@ -8,6 +8,7 @@ import { elasticsearchQueryCategories, allElasticsearchQueries } from "@/data/el
 import { redisQueryCategories, allRedisQueries } from "@/data/redis-queries";
 import { neo4jQueryCategories, allNeo4jQueries } from "@/data/neo4j-queries";
 import { influxQueryCategories, allInfluxQueries } from "@/data/influxdb-queries";
+import { mongoQueryCategories, allMongoQueries } from "@/data/mongodb-queries";
 
 interface QueryResult {
   columns: string[];
@@ -17,16 +18,25 @@ interface QueryResult {
   error?: string;
 }
 
-type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch" | "redis" | "neo4j" | "influxdb";
+type DB = "postgresql" | "mysql" | "cassandra" | "elasticsearch" | "redis" | "neo4j" | "influxdb" | "mongodb";
 
-// Cassandra uses `cql`, Elasticsearch uses `esQuery`, Redis uses `command`, Neo4j uses `cypher`, InfluxDB uses `flux`, others use `sql`
-const getQueryText = (q: any) => q.cql ?? q.esQuery ?? q.command ?? q.cypher ?? q.flux ?? q.sql ?? "";
+// Each DB uses a different query field
+const getQueryText = (q: any) => {
+  if (q.cql)       return q.cql;
+  if (q.esQuery)   return q.esQuery;
+  if (q.command)   return q.command;
+  if (q.cypher)    return q.cypher;
+  if (q.flux)      return q.flux;
+  if (q.operation) return JSON.stringify(q.operation, null, 2);
+  return q.sql ?? "";
+};
 const getApiRoute = (q: any, db: DB) => {
   if (db === "cassandra")     return q.apiPath ?? "/api/cassandra/query";
   if (db === "elasticsearch") return q.apiPath ?? "/api/elasticsearch/query";
   if (db === "redis")         return q.apiPath ?? "/api/redis/query";
   if (db === "neo4j")         return q.apiPath ?? "/api/neo4j/query";
   if (db === "influxdb")      return q.apiPath ?? "/api/influxdb/query";
+  if (db === "mongodb")       return q.apiPath ?? "/api/mongodb/query";
   return db === "mysql" ? "/api/mysql" : "/api/query";
 };
 
@@ -94,6 +104,15 @@ const DB_CONFIG = {
     allQueries: allInfluxQueries,
     hint: "Flux queries — from(bucket:) |> range() |> filter() |> ...",
   },
+  mongodb: {
+    label: "MongoDB",
+    color: "#00ed64",
+    accent: "#00c853",
+    icon: "🍃",
+    categories: mongoQueryCategories,
+    allQueries: allMongoQueries,
+    hint: "MongoDB operations — find, aggregate, $match, $group, $lookup",
+  },
 };
 
 export default function SQLEditorPage() {
@@ -141,16 +160,14 @@ export default function SQLEditorPage() {
       const isRedis = activeDB === "redis";
       const isNeo4j = activeDB === "neo4j";
       const isInflux = activeDB === "influxdb";
+      const isMongo = activeDB === "mongodb";
       let reqBody: any;
       if (isElasticsearch) {
         const activeQ = dbConf.allQueries.find((q) => q.id === activeQueryId) as any;
         let parsedBody: any;
-        try {
-          parsedBody = JSON.parse(sql);
-        } catch {
+        try { parsedBody = JSON.parse(sql); } catch {
           setResult({ columns: [], rows: [], rowCount: 0, executionTime: 0, error: "Invalid JSON — check the query body" });
-          setLoading(false);
-          return;
+          setLoading(false); return;
         }
         reqBody = { body: parsedBody, index: activeQ?.index ?? "candidates" };
       } else if (isCassandra) {
@@ -161,6 +178,11 @@ export default function SQLEditorPage() {
         reqBody = { cypher: sql };
       } else if (isInflux) {
         reqBody = { flux: sql };
+      } else if (isMongo) {
+        try { reqBody = { operation: JSON.parse(sql) }; } catch {
+          setResult({ columns: [], rows: [], rowCount: 0, executionTime: 0, error: "Invalid JSON — check the operation object" });
+          setLoading(false); return;
+        }
       } else {
         reqBody = { sql };
       }
@@ -293,6 +315,22 @@ export default function SQLEditorPage() {
               </div>
             )}
 
+            {/* MongoDB info banner */}
+            {activeDB === "mongodb" && (
+              <div style={{ padding: "8px 16px", background: "#001a0d", borderBottom: "1px solid #334155", fontSize: 11, color: "#00ed64", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>🍃 MongoDB — edit the JSON operation object and run</span>
+                <button onClick={async () => {
+                  const r = await fetch("/api/mongodb/seed", { method: "POST" });
+                  const d = await r.json();
+                  alert(d.success
+                    ? `✅ Seeded! candidates: ${d.collections.candidates}, jobs: ${d.collections.jobs}, interviews: ${d.collections.interviews}`
+                    : `❌ Seed failed: ${d.error}`);
+                }} style={{ background: "#00ed64", border: "none", borderRadius: 4, padding: "3px 8px", color: "#001a0d", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>
+                  Seed Data
+                </button>
+              </div>
+            )}
+
             {activeDB === "postgresql" && tables.length > 0 && (
               <div style={{ padding: "10px 16px", borderBottom: "1px solid #334155" }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Tables</div>
@@ -367,7 +405,7 @@ export default function SQLEditorPage() {
             <textarea value={sql} onChange={(e) => setSql(e.target.value)}
               onKeyDown={(e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); runQuery(); } }}
               spellCheck={false}
-              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : activeDB === "redis" ? "Type a Redis command... e.g. GET key · HGETALL key (Ctrl+Enter to run)" : activeDB === "neo4j" ? "Write your Cypher query... MATCH (n)-[:REL]->(m) RETURN n (Ctrl+Enter to run)" : activeDB === "influxdb" ? "Write your Flux query... from(bucket:) |> range() |> filter() (Ctrl+Enter to run)" : "Write your SQL query here... (Ctrl+Enter to run)"}
+              placeholder={activeDB === "cassandra" ? "Write your CQL query here... (Ctrl+Enter to run)" : activeDB === "elasticsearch" ? "Edit the JSON query body... (Ctrl+Enter to run)" : activeDB === "redis" ? "Type a Redis command... e.g. GET key · HGETALL key (Ctrl+Enter to run)" : activeDB === "neo4j" ? "Write your Cypher query... MATCH (n)-[:REL]->(m) RETURN n (Ctrl+Enter to run)" : activeDB === "influxdb" ? "Write your Flux query... from(bucket:) |> range() |> filter() (Ctrl+Enter to run)" : activeDB === "mongodb" ? 'Edit the MongoDB operation JSON... { "op": "find", "collection": "candidates", ... } (Ctrl+Enter to run)' : "Write your SQL query here... (Ctrl+Enter to run)"}
               style={{ width: "100%", height: 170, background: "#0f172a", border: "1px solid #334155", borderRadius: 12, padding: 16, color: "#e2e8f0", fontFamily: "'Cascadia Code','Fira Code','Courier New',monospace", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }} />
             <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Ctrl+Enter to run · {dbConf.hint}</div>
           </div>
