@@ -129,6 +129,16 @@ export default function SQLEditorPage() {
   const [tables, setTables] = useState<string[]>([]);
   const rowsPerPage = 10;
 
+  // AI panel state
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [aiTab, setAiTab] = useState<"insight" | "summary" | "history">("insight");
+  const [aiInsight, setAiInsight] = useState("");
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [queryHistory, setQueryHistory] = useState<any[]>([]);
+  const [historyStats, setHistoryStats] = useState<any>(null);
+  const [insightQueryId, setInsightQueryId] = useState<string | null>(null);
+
   const dbConf = DB_CONFIG[activeDB];
 
   const switchDB = (db: DB) => {
@@ -194,13 +204,79 @@ export default function SQLEditorPage() {
       });
       const data = await res.json();
       // Guarantee columns is always a plain JS array
-      setResult({ ...data, columns: Array.from(data.columns ?? []), rows: Array.from(data.rows ?? []) });
+      const finalResult = { ...data, columns: Array.from(data.columns ?? []), rows: Array.from(data.rows ?? []) };
+      setResult(finalResult);
+      // Auto-trigger AI insight
+      if (process.env.NEXT_PUBLIC_AI_ENABLED) getInsight(finalResult);
     } catch {
       setResult({ columns: [], rows: [], rowCount: 0, executionTime: 0, error: "Network error" });
     } finally {
       setLoading(false);
     }
   }, [sql, activeApiPath, activeDB, activeQueryId, dbConf]);
+
+  // AI: get insight for current query
+  const getInsight = useCallback(async (queryResult: QueryResult) => {
+    if (!process.env.NEXT_PUBLIC_AI_ENABLED) return;
+    const activeQ = dbConf.allQueries.find((q) => q.id === activeQueryId) as any;
+    setAiInsight("");
+    setAiLoading(true);
+    setAiPanelOpen(true);
+    setAiTab("insight");
+    setInsightQueryId(activeQueryId);
+    try {
+      const res = await fetch("/api/ai/insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          db: activeDB,
+          queryText: sql,
+          queryLabel: activeQ?.label,
+          concept: activeQ?.concept,
+          result: queryResult,
+        }),
+      });
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) return;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        setAiInsight((prev) => prev + decoder.decode(value));
+      }
+    } catch { setAiInsight("Could not generate insight. Check your ANTHROPIC_API_KEY."); }
+    finally { setAiLoading(false); }
+  }, [activeDB, activeQueryId, sql, dbConf]);
+
+  // AI: summarize query history
+  const getSummary = useCallback(async () => {
+    setAiSummary("");
+    setAiLoading(true);
+    setAiTab("summary");
+    try {
+      const res = await fetch("/api/ai/summary", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) return;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        setAiSummary((prev) => prev + decoder.decode(value));
+      }
+    } catch { setAiSummary("Could not generate summary."); }
+    finally { setAiLoading(false); }
+  }, []);
+
+  // Load query history
+  const loadHistory = useCallback(async () => {
+    setAiTab("history");
+    try {
+      const res = await fetch("/api/ai/history");
+      const data = await res.json();
+      setQueryHistory(data.history ?? []);
+      setHistoryStats(data.stats ?? null);
+    } catch {}
+  }, []);
 
   const selectQuery = (q: any) => {
     setActiveQueryId(q.id);
@@ -252,6 +328,10 @@ export default function SQLEditorPage() {
         <div style={{ flex: 1 }} />
         <div style={{ fontSize: 11, color: "#475569", display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ color: dbConf.accent, fontWeight: 600 }}>Connected to {dbConf.label}</span>
+          <button onClick={() => { setAiPanelOpen(!aiPanelOpen); if (!aiPanelOpen) setAiTab("insight"); }}
+            style={{ background: aiPanelOpen ? "linear-gradient(135deg,#6366f1,#8b5cf6)" : "transparent", border: "1px solid #6366f1", borderRadius: 6, padding: "3px 10px", color: aiPanelOpen ? "white" : "#6366f1", cursor: "pointer", fontSize: 11, fontFamily: "inherit", fontWeight: 600 }}>
+            🤖 AI
+          </button>
           <button onClick={async () => {
             await fetch("/api/auth", { method: "DELETE" });
             window.location.href = "/login";
@@ -481,7 +561,148 @@ export default function SQLEditorPage() {
             )}
           </div>
         </main>
+
+        {/* ── AI Panel ── */}
+        {aiPanelOpen && (
+          <div style={{ width: 340, borderLeft: "1px solid #334155", background: "#0f172a", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+
+            {/* Panel header */}
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #334155", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 16 }}>🤖</span>
+                <span style={{ fontWeight: 700, fontSize: 13, color: "#f1f5f9" }}>AI Assistant</span>
+                <span style={{ fontSize: 10, color: "#6366f1", background: "#1e1b4b", padding: "1px 6px", borderRadius: 10, fontWeight: 600 }}>pgvector</span>
+              </div>
+              <button onClick={() => setAiPanelOpen(false)} style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", borderBottom: "1px solid #334155", flexShrink: 0 }}>
+              {([["insight", "💡 Insight"], ["summary", "📊 Summary"], ["history", "🕐 History"]] as const).map(([tab, label]) => (
+                <button key={tab} onClick={() => {
+                  setAiTab(tab);
+                  if (tab === "summary" && !aiSummary) getSummary();
+                  if (tab === "history") loadHistory();
+                }} style={{
+                  flex: 1, padding: "8px 4px", background: "transparent",
+                  border: "none", borderBottom: `2px solid ${aiTab === tab ? "#6366f1" : "transparent"}`,
+                  color: aiTab === tab ? "#6366f1" : "#64748b",
+                  cursor: "pointer", fontSize: 11, fontWeight: aiTab === tab ? 700 : 400,
+                  fontFamily: "inherit",
+                }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Panel content */}
+            <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+
+              {/* Insight tab */}
+              {aiTab === "insight" && (
+                <div>
+                  {!aiInsight && !aiLoading && (
+                    <div style={{ textAlign: "center", color: "#475569", marginTop: 40 }}>
+                      <div style={{ fontSize: 32, marginBottom: 12 }}>💡</div>
+                      <div style={{ fontSize: 13 }}>Run a query to get AI insights</div>
+                      <div style={{ fontSize: 11, marginTop: 8, color: "#334155" }}>Powered by Claude Haiku + pgvector</div>
+                    </div>
+                  )}
+                  {aiLoading && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#6366f1", fontSize: 12 }}>
+                      <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</span>
+                      Generating insight...
+                    </div>
+                  )}
+                  {aiInsight && (
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                        {DB_CONFIG[activeDB].icon} {DB_CONFIG[activeDB].label} Insight
+                      </div>
+                      <div style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                        {aiInsight}
+                      </div>
+                      <button onClick={() => getInsight(result!)} disabled={!result || aiLoading}
+                        style={{ marginTop: 16, width: "100%", background: "#1e293b", border: "1px solid #334155", borderRadius: 6, padding: "7px", color: "#94a3b8", cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>
+                        ↺ Regenerate
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Summary tab */}
+              {aiTab === "summary" && (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <span style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Learning Summary</span>
+                    <button onClick={getSummary} disabled={aiLoading}
+                      style={{ background: "transparent", border: "1px solid #334155", borderRadius: 4, padding: "3px 8px", color: "#64748b", cursor: "pointer", fontSize: 10, fontFamily: "inherit" }}>
+                      Refresh
+                    </button>
+                  </div>
+                  {aiLoading && (
+                    <div style={{ color: "#6366f1", fontSize: 12, display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</span> Analyzing your session...
+                    </div>
+                  )}
+                  {aiSummary && (
+                    <div style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.7 }}>{aiSummary}</div>
+                  )}
+                  {historyStats && (
+                    <div style={{ marginTop: 20, padding: 12, background: "#1e293b", borderRadius: 8, border: "1px solid #334155" }}>
+                      <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Session Stats</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {[
+                          ["Total Queries", historyStats.total],
+                          ["Success Rate", `${historyStats.successRate}%`],
+                          ["Avg Time", `${historyStats.avgExecTime}ms`],
+                          ["DBs Explored", Object.keys(historyStats.byDb ?? {}).length],
+                        ].map(([label, val]) => (
+                          <div key={label as string} style={{ background: "#0f172a", borderRadius: 6, padding: "8px 10px" }}>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: "#6366f1" }}>{val}</div>
+                            <div style={{ fontSize: 10, color: "#64748b" }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* History tab */}
+              {aiTab === "history" && (
+                <div>
+                  <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                    Query History ({queryHistory.length})
+                  </div>
+                  {queryHistory.length === 0 && (
+                    <div style={{ color: "#475569", fontSize: 13, textAlign: "center", marginTop: 40 }}>No history yet — run some queries!</div>
+                  )}
+                  {queryHistory.map((q, i) => (
+                    <div key={q.id ?? i} style={{ marginBottom: 8, padding: "10px 12px", background: "#1e293b", borderRadius: 8, border: "1px solid #334155", cursor: "pointer" }}
+                      onClick={() => { setAiInsight(""); setAiTab("insight"); }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <span style={{ fontSize: 10 }}>{DB_CONFIG[q.db as DB]?.icon ?? "🗄️"}</span>
+                        <span style={{ fontSize: 10, color: DB_CONFIG[q.db as DB]?.accent ?? "#6366f1", fontWeight: 700 }}>{q.db}</span>
+                        {q.had_error && <span style={{ fontSize: 10, color: "#ef4444" }}>error</span>}
+                        <span style={{ fontSize: 10, color: "#334155", marginLeft: "auto" }}>
+                          {new Date(q.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>{q.query_label ?? "Custom query"}</div>
+                      {q.concept && <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>{q.concept}</div>}
+                      <div style={{ fontSize: 10, color: "#334155", marginTop: 4 }}>{q.row_count} rows · {q.exec_time}ms</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
