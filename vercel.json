@@ -1,5 +1,12 @@
 {
   "framework": "nextjs",
   "buildCommand": "next build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "app/api/cassandra/**": { "maxDuration": 30 },
+    "app/api/neo4j/**":     { "maxDuration": 30 },
+    "app/api/influxdb/**":  { "maxDuration": 30 },
+    "app/api/mongodb/**":   { "maxDuration": 30 },
+    "app/api/ai/**":        { "maxDuration": 30 }
+  }
 }

@@ -7,9 +7,12 @@ const nextConfig = {
       ...config.resolve.fallback,
       kerberos: false,
       snappy: false,
+      "aws-crt": false,
+      "mongodb-client-encryption": false,
     };
     return config;
   },
+  serverExternalPackages: ["cassandra-driver", "neo4j-driver"],
 };
 
 module.exports = nextConfig;
