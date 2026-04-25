@@ -1,8 +1,8 @@
-import { cassandra } from "@/lib/cassandra";
+import { getCassandraClient } from "@/lib/cassandra";
 
 export async function GET() {
   try {
-    await cassandra.connect();
+    
 
     return Response.json({
       message: "Connected to Cassandra ✅",

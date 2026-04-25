@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cassandra } from "@/lib/cassandra";
+import { getCassandraClient } from "@/lib/cassandra";
 
 export async function POST(req: NextRequest) {
   const start = Date.now();
@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
 
     const cleanCQL = cql.trim().replace(/;+$/, "");
 
-    await cassandra.connect();
-    const result = await cassandra.execute(cleanCQL, [], { prepare: false });
+    
+    const result = await (await getCassandraClient()).execute(cleanCQL, [], { prepare: false });
 
     const executionTime = Date.now() - start;
     const rows = result.rows.map((r) => {
