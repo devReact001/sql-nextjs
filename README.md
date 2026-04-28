@@ -1,155 +1,218 @@
+<div align="center">
+
 # 🗄️ SQL Explorer
 
-> **An interactive, AI-powered database learning platform** — explore 8 different database paradigms, run live queries, and get real-time AI insights powered by Claude + pgvector.
+### An AI-powered, multi-paradigm database learning platform — run live queries across 8 databases from a single interface
 
-🔗 **[Live Demo → sql-nextjs.vercel.app](https://sql-nextjs.vercel.app)**
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![Anthropic](https://img.shields.io/badge/Claude-Haiku-D97757?style=flat-square&logo=anthropic)](https://anthropic.com)
+[![pgvector](https://img.shields.io/badge/pgvector-Supabase-3FCF8E?style=flat-square&logo=supabase)](https://supabase.com)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com)
+
+**[🔗 Live Demo → sql-nextjs.vercel.app](https://sql-nextjs.vercel.app)**
+
+</div>
 
 ---
 
-## 🎯 What Is This?
+## Overview
 
-SQL Explorer is a full-stack web application that lets you **write and run real queries** against 8 production databases — all from a single, beautifully designed interface. Each database is connected to a live cloud instance with real data seeded in.
+SQL Explorer is a full-stack web application for running **real queries against 8 live production databases** — each connected to a cloud instance with real data. An **AI assistant (Claude + pgvector)** explains every query in context, compares paradigms across databases, and tracks your learning history semantically.
 
-Built to demonstrate deep understanding of database paradigms, system design, and modern AI integration — not just syntax, but *when* and *why* each database shines.
+Built to demonstrate deep understanding of database paradigms and system design across relational, document, graph, time-series, wide-column, search, key-value, and vector models — not just syntax, but *when* and *why* each database shines.
 
 ---
 
-## 🗃️ Databases Covered
+## 📸 Screenshots
 
-| # | Database | Paradigm | Cloud Service | Key Concepts |
-|---|----------|----------|---------------|--------------|
+### Login
+![Login](./screenshots/login.png)
+
+### PostgreSQL — Relational
+![PostgreSQL](./screenshots/postgresql.png)
+
+### MySQL — Relational
+![MySQL](./screenshots/mysql.png)
+
+### MongoDB — Document
+![MongoDB](./screenshots/mongodb.png)
+
+### Neo4j — Graph
+![Neo4j](./screenshots/neo4j.png)
+
+### Redis — Key-Value
+![Redis](./screenshots/redis.png)
+
+### Cassandra — Wide-Column
+![Cassandra](./screenshots/cassandra.png)
+
+### Elasticsearch — Search Engine
+![Elasticsearch](./screenshots/elasticsearch.png)
+
+### InfluxDB — Time-Series
+![InfluxDB](./screenshots/influxdb.png)
+
+> 📁 **To add screenshots:** Save the images to a `screenshots/` folder in the repo root with the filenames above.
+
+---
+
+## 🚀 Live Demo
+
+**[sql-nextjs.vercel.app](https://sql-nextjs.vercel.app)** — Password-protected. Session valid for 7 days.
+
+---
+
+## 🗃️ 8 Databases, 8 Paradigms
+
+| # | Database | Paradigm | Cloud | Key Concepts |
+|---|----------|----------|-------|--------------|
 | 1 | 🐘 **PostgreSQL** | Relational | Supabase | JOINs, CTEs, Window Functions, Indexes |
-| 2 | 🐬 **MySQL** | Relational | Railway | Stored Procedures, Full-Text Search |
-| 3 | 🪐 **Cassandra** | Wide-Column | DataStax Astra | Partition Keys, Denormalization, CQL |
-| 4 | 🔎 **Elasticsearch** | Search Engine | Elastic Cloud | Inverted Index, Aggregations, Fuzzy Search |
-| 5 | ⚡ **Redis** | Key-Value | Railway | Strings, Hashes, Lists, Sets, Sorted Sets |
-| 6 | 🕸️ **Neo4j** | Graph | AuraDB | Cypher, Shortest Path, Degree Centrality |
-| 7 | 📈 **InfluxDB** | Time-Series | InfluxDB Cloud | Flux, aggregateWindow, Downsampling |
-| 8 | 🍃 **MongoDB** | Document | Atlas | Aggregation Pipeline, $lookup, $unwind |
+| 2 | 🐬 **MySQL** | Relational | Railway | Full-Text Search, Stored Procedures, Date/Time |
+| 3 | 🍃 **MongoDB** | Document | Atlas | Aggregation Pipeline, `$lookup`, `$unwind`, `$facet` |
+| 4 | 🕸️ **Neo4j** | Graph | AuraDB | Cypher, Relationship Traversal, Shortest Path |
+| 5 | ⚡ **Redis** | Key-Value | Railway | Strings, Hashes, Sorted Sets, TTL, Atomic Counters |
+| 6 | 🪐 **Cassandra** | Wide-Column | DataStax Astra | Partition Keys, Denormalization, CQL |
+| 7 | 🔎 **Elasticsearch** | Search Engine | Elastic Cloud | Inverted Index, Fuzzy Search, Aggregations |
+| 8 | 📈 **InfluxDB** | Time-Series | InfluxDB Cloud | Flux, `aggregateWindow`, Downsampling, Anomaly Detection |
 
 ---
 
-## 🤖 AI Agent (pgvector + Claude)
+## 🤖 AI Assistant — Claude + pgvector
 
-Every query you run is **semantically embedded and stored** in PostgreSQL via pgvector. The AI panel provides:
+Every query triggers a **three-part AI experience**:
 
-- **💡 Live Insights** — After each query, Claude Haiku explains the concept, compares it across databases, and suggests what to explore next. Streams in real-time.
-- **📊 Learning Summary** — Analyzes your full session history and generates a personalized learning report across all 8 databases.
-- **🕐 Query History** — Every query stored as a vector embedding. Timestamped, color-coded by database, searchable by meaning.
+- **💡 Insight** — Claude Haiku explains the query concept, compares it across databases, and suggests the next query to try. Streams in real time.
+- **📊 Summary** — Analyzes your complete session history and generates a personalized learning report across all 8 databases.
+- **🕐 History** — Every query is stored as a vector embedding in pgvector. Semantically searchable. Timestamped and color-coded by database.
 
 ```
 You run a query
-      ↓
-Embedding stored in pgvector (PostgreSQL)
-      ↓
-Claude Haiku generates insight (streaming)
-      ↓
-"This $group aggregation in MongoDB is equivalent
- to GROUP BY in SQL — try $facet next for
- multi-dimensional stats in one query."
+      │
+      ▼
+Embedding stored in pgvector (Supabase)
+      │
+      ▼
+Claude Haiku streams an insight:
+"This $group pipeline stage in MongoDB maps directly to
+ GROUP BY in SQL — try $facet next for multi-dimensional
+ aggregations in a single query pass."
 ```
 
 ---
 
 ## ✨ Features
 
-- **160+ example queries** across 8 databases — organized by category and concept
+- **160+ curated example queries** organized by concept and database
 - **Real-time streaming** AI responses via Anthropic API
 - **Semantic search** over query history using pgvector cosine similarity
-- **Password-protected** — middleware auth with 7-day cookie session
-- **One-click seed** — every database can be populated with sample hiring data
-- **Ctrl+Enter** to run queries — keyboard-first workflow
-- **Pagination** — results paginated with row count and execution time
-- **Cross-DB data model** — same hiring domain across all 8 databases for direct comparison
+- **Password-protected** with Next.js middleware and HttpOnly 7-day cookie session
+- **One-click seed** — populate every database with a consistent hiring/candidates dataset
+- **Ctrl+Enter** to run — keyboard-first workflow
+- **Pagination + execution time** on all result sets
+- **Same data domain across all 8 databases** — enables direct cross-paradigm comparison
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Next.js 14                           │
-│                    (App Router + TypeScript)                 │
-├──────────────┬──────────────────────────┬───────────────────┤
-│   Sidebar    │      Query Editor         │    AI Panel       │
-│   160+ queries│   Textarea + Results     │  Insight/Summary  │
-│   8 DB tabs  │   Table with pagination  │  History (vector) │
-└──────┬───────┴────────────┬────────────┴────────┬──────────┘
-       │                    │                      │
-       ▼                    ▼                      ▼
-  Next.js API          Next.js API           Anthropic API
-   Routes               Routes               Claude Haiku
-       │                    │                 (streaming)
-       ▼                    ▼
- 8 Database Clients    pgvector
- (one per DB)          embeddings
+┌─────────────────────────────────────────────────────────────────┐
+│                        Next.js 14 App Router                    │
+├──────────────┬──────────────────────────┬───────────────────────┤
+│   Sidebar    │      Query Editor         │      AI Panel         │
+│  160+ queries│  Textarea + Results table │  Insight / Summary    │
+│   8 DB tabs  │  Pagination + exec time  │  History (pgvector)   │
+└──────┬───────┴────────────┬────────────┴──────────┬────────────┘
+       │                    │                        │
+       ▼                    ▼                        ▼
+  Next.js API          Next.js API            Anthropic API
+   Routes               Routes                Claude Haiku
+  (8 DB clients)      (pgvector store)          (streaming)
 ```
 
 ### API Routes
 
 ```
-/api/query          → PostgreSQL (Supabase RPC)
-/api/mysql          → MySQL (mysql2)
-/api/cassandra/**   → Cassandra (cassandra-driver + Astra bundle)
-/api/elasticsearch/ → Elasticsearch (fetch + API key)
-/api/redis/         → Redis (ioredis)
-/api/neo4j/         → Neo4j (neo4j-driver)
-/api/influxdb/      → InfluxDB (influxdb-client)
-/api/mongodb/       → MongoDB (mongodb driver)
-/api/ai/insight     → Streaming AI insight (Anthropic)
-/api/ai/summary     → Session summary (Anthropic)
-/api/ai/history     → Query history (Supabase)
-/api/auth           → Login / logout (cookie)
+/api/query            → PostgreSQL    (Supabase RPC + native driver)
+/api/mysql            → MySQL         (mysql2)
+/api/cassandra/**     → Cassandra     (cassandra-driver + Astra secure bundle)
+/api/elasticsearch/   → Elasticsearch (REST + API key)
+/api/redis/           → Redis         (ioredis)
+/api/neo4j/           → Neo4j         (neo4j-driver)
+/api/influxdb/        → InfluxDB      (@influxdata/influxdb-client)
+/api/mongodb/         → MongoDB       (mongodb native driver)
+/api/ai/insight       → Streaming insight   (Anthropic Claude Haiku)
+/api/ai/summary       → Session summary     (Anthropic Claude Haiku)
+/api/ai/history       → Vector history      (pgvector cosine similarity)
+/api/auth             → Login / logout      (HttpOnly cookie)
 ```
 
 ---
 
-## 🧠 Query Categories
+## 🧠 Cross-Paradigm Query Comparison
 
-### PostgreSQL & MySQL — Relational
-`SELECT` · `JOIN` · `GROUP BY` · `Window Functions` · `CTEs` · `Subqueries` · `CASE` · `String Functions` · `Date/Time` · `Indexes` · `EXPLAIN`
+The same question — "find all active candidates" — across 6 paradigms:
 
-### Cassandra — Wide-Column
-`Partition Key Queries` · `Clustering Columns` · `Materialized Views` · `TTL` · `ALLOW FILTERING` · `Denormalization Patterns`
+```sql
+-- PostgreSQL / MySQL (Relational)
+SELECT * FROM candidates WHERE status = 'active' ORDER BY id;
 
-### Elasticsearch — Search
-`match_all` · `match` · `bool` · `term` · `range` · `fuzzy` · `wildcard` · `aggregations` · `nested aggs` · `pivot`
+-- MongoDB (Document)
+db.candidates.find({ status: 'active' })
 
-### Redis — Key-Value
-`Strings` · `Hashes` · `Lists` · `Sets` · `Sorted Sets` · `TTL` · `SCAN` · `Atomic Counters` · `Leaderboards`
+-- Elasticsearch (Search)
+{ "query": { "term": { "status.keyword": "active" } } }
 
-### Neo4j — Graph
-`MATCH patterns` · `Relationship traversal` · `shortestPath()` · `Variable-length paths` · `Degree centrality` · `COLLECT` · `WITH pipelines` · `OPTIONAL MATCH`
+-- Redis (Key-Value)
+SMEMBERS status:active
 
-### InfluxDB — Time-Series
-`from() |> range() |> filter()` · `aggregateWindow` · `timedMovingAverage` · `pivot` · `derivative` · `timeShift` · `Anomaly detection (3σ)` · `cumulativeSum`
+-- Neo4j (Graph)
+MATCH (c:Candidate {status: 'active'}) RETURN c
 
-### MongoDB — Document
-`find()` · `$match` · `$group` · `$lookup` · `$unwind` · `$bucket` · `$addFields` · `$facet` · Array operators · Nested document queries
+-- Cassandra (Wide-Column)
+SELECT * FROM candidates_by_status WHERE status = 'Active'
+```
+
+Same question, 6 fundamentally different paradigms — that's the point.
 
 ---
 
-## 🚀 Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Styling | Inline styles (zero CSS frameworks) |
-| Auth | Next.js Middleware + HttpOnly cookies |
-| AI | Anthropic Claude Haiku (streaming) |
-| Vector DB | pgvector on Supabase PostgreSQL |
-| Deployment | Vercel |
+| Framework | Next.js 14 (App Router + Server Components) |
+| Language | TypeScript — strict mode |
+| Auth | Next.js Middleware + HttpOnly cookies (no library) |
+| AI | Anthropic Claude Haiku — streaming responses |
+| Vector Store | pgvector on Supabase PostgreSQL |
+| Database Drivers | Raw native drivers — no ORMs |
+| Deployment | Vercel (Edge Middleware + Serverless Functions) |
+| Styling | Inline styles — zero CSS framework dependencies |
 
 ---
 
-## 🛠️ Running Locally
+## ⚙️ Engineering Decisions
 
-### Prerequisites
-- Node.js 18+
-- Accounts on: Supabase, Railway, DataStax Astra, Elastic Cloud, Neo4j Aura, InfluxDB Cloud, MongoDB Atlas, Anthropic
+**No ORMs — raw drivers only.**
+Every database uses its native driver: `cassandra-driver`, `neo4j-driver`, `mongodb`, `ioredis`, `@influxdata/influxdb-client`. This exposes exactly what's happening at the protocol level rather than hiding it behind abstractions.
 
-### Setup
+**Cassandra on Vercel — Serverless Bundle Problem.**
+Cassandra's driver requires a secure zip bundle for DataStax Astra connections. Vercel serverless functions can't include local zip files in the bundle. Solution: upload the bundle to Supabase Storage, download it at runtime into `/tmp` on cold start.
+
+**Neo4j result serialization.**
+Neo4j's driver returns `ReadonlyArray` for result keys. After JSON serialization through the API route, this becomes a plain object that breaks React's `.map()`. Fixed by explicitly calling `Array.from()` at the API layer before returning results.
+
+**Auth without a library.**
+Next.js middleware intercepts every request and checks for an HttpOnly cookie. `/api/auth` sets it on correct password, deletes on logout. No NextAuth, no JWT library — a plain secure cookie with a 7-day expiry. Simple, auditable, zero dependencies.
+
+**Streaming AI responses.**
+Claude Haiku responses stream token-by-token using `ReadableStream`. The API route writes chunks directly to the response; the client reads them incrementally using `response.body.getReader()` — no WebSockets, no polling.
+
+---
+
+## 🚀 Running Locally
 
 ```bash
 git clone https://github.com/devReact001/sql-nextjs.git
@@ -178,11 +241,11 @@ CASSANDRA_USERNAME=
 CASSANDRA_PASSWORD=
 CASSANDRA_KEYSPACE=
 
-# Elasticsearch
+# Elasticsearch (Elastic Cloud)
 ELASTICSEARCH_URL=
 ELASTICSEARCH_API_KEY=
 
-# Redis
+# Redis (Railway)
 REDIS_URL=
 
 # Neo4j (AuraDB)
@@ -198,102 +261,49 @@ INFLUXDB_ORG=
 INFLUXDB_BUCKET=
 NEXT_PUBLIC_INFLUXDB_BUCKET=
 
-# MongoDB Atlas
+# MongoDB (Atlas)
 MONGODB_URI=
 MONGODB_DB=
 
 # Auth
 APP_PASSWORD=
 
-# AI (Anthropic)
+# AI
 ANTHROPIC_API_KEY=
 ```
 
 ```bash
 npm run dev
-# Open http://localhost:3000
+# http://localhost:3000
 ```
 
-### Seeding Data
-
-Each database has a **"Seed Data"** button in the sidebar that populates it with a hiring/candidates dataset. Run pgvector setup once in Supabase SQL Editor using `pgvector-setup.sql`.
-
----
-
-## 📐 Database Design Decisions
-
-### Why the same data model across all 8?
-Using a **hiring/candidates domain** across every database makes direct paradigm comparison possible:
-
-```
-PostgreSQL:     SELECT * FROM candidates WHERE status = 'active'
-MongoDB:        db.candidates.find({ status: 'active' })
-Elasticsearch:  { query: { term: { "status.keyword": "active" } } }
-Redis:          SMEMBERS status:active
-Neo4j:          MATCH (c:Candidate {status: 'active'}) RETURN c
-Cassandra:      SELECT * FROM candidates_by_status WHERE status = 'Active'
-```
-
-Same question, 6 completely different paradigms — that's the point.
-
-### Why not use an ORM?
-Raw drivers for every database — `cassandra-driver`, `neo4j-driver`, `mongodb`, `redis`, `@influxdata/influxdb-client` — to show what's actually happening under the hood, not hidden behind abstractions.
-
----
-
-## 🎤 Interview Talking Points
-
-**"Walk me through your architecture"**
-> Next.js App Router with one API route per database. Each route uses the native driver — no ORMs — so I understand exactly what queries are sent. The AI panel uses pgvector for semantic search over query history and Claude Haiku for streaming insights.
-
-**"Why did you choose these 8 databases?"**
-> They cover every major paradigm: relational (PostgreSQL, MySQL), wide-column (Cassandra), search (Elasticsearch), key-value (Redis), graph (Neo4j), time-series (InfluxDB), and document (MongoDB). Each solves problems the others can't.
-
-**"What was the hardest technical challenge?"**
-> Neo4j's driver returns a `ReadonlyArray` for result keys that breaks React's `.map()` after JSON serialization — had to explicitly `Array.from()` at the API layer. Also Cassandra on Vercel can't use a local zip bundle, so I upload it to Supabase Storage and download it at runtime into `/tmp`.
-
-**"How does the AI work?"**
-> Every query gets embedded using a deterministic hash function and stored in pgvector. When you run a query, the API calls Claude Haiku with the query text, concept, and result — it streams back an insight comparing the concept across databases. The summary tab analyzes your full session history to generate a personalized learning report.
-
-**"How did you handle auth without a library?"**
-> Next.js middleware checks for an HttpOnly cookie on every request. The `/api/auth` route sets it on correct password, deletes it on logout. No NextAuth, no JWT library — just a secure cookie with a 7-day expiry.
+Use the **Seed Data** button in each database tab to populate with the hiring dataset. Run `pgvector-setup.sql` once in Supabase SQL Editor to enable the vector store.
 
 ---
 
 ## 📊 By The Numbers
 
-| Metric | Count |
+| Metric | Value |
 |--------|-------|
 | Databases | 8 |
-| Query examples | 160+ |
+| Database paradigms | 8 / 8 |
+| Example queries | 160+ |
 | API routes | 25+ |
-| Lines of TypeScript | 5,000+ |
-| Database paradigms covered | 8 / 8 |
 | Cloud services integrated | 9 |
-
----
-
-## 🔮 Roadmap
-
-- [ ] pgvector semantic search across query history
-- [ ] HBase (wide-column, Hadoop ecosystem)
-- [ ] Pinecone (dedicated vector database)
-- [ ] Query execution plan visualization
-- [ ] Export results as CSV/JSON
-- [ ] Dark/light theme toggle
+| TypeScript lines | 5,000+ |
 
 ---
 
 ## 📄 License
 
-MIT — feel free to fork, learn from, and build on top of this.
+MIT — free to fork, learn from, and build on top of this.
 
 ---
 
 <div align="center">
 
-Built with ❤️ using Next.js, TypeScript, and way too many database drivers
+Built with ❤️ using Next.js · TypeScript · Claude · pgvector · and 8 database drivers
 
-**[Live Demo](https://sql-nextjs.vercel.app)** · **[GitHub](https://github.com/devReact001/sql-nextjs)**
+**[🔗 Live Demo](https://sql-nextjs.vercel.app)** · **[💻 GitHub](https://github.com/devReact001/sql-nextjs)**
 
 </div>
