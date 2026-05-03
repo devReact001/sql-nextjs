@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { getCassandraClient } from "@/lib/cassandra";
 import { v4 as uuidv4 } from "uuid";
 
