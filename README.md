@@ -8,11 +8,21 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![Anthropic](https://img.shields.io/badge/Claude-Haiku-D97757?style=flat-square&logo=anthropic)](https://anthropic.com)
 [![pgvector](https://img.shields.io/badge/pgvector-Supabase-3FCF8E?style=flat-square&logo=supabase)](https://supabase.com)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com) 
 
 **[🔗 Live Demo → sql-nextjs.vercel.app](https://sql-nextjs.vercel.app)**
 
 </div>
+
+---
+
+## 🔑 Access & Demo
+
+**[sql-nextjs.vercel.app](https://sql-nextjs.vercel.app)** — Password-protected.
+
+> 📞 **Need the password? Call or WhatsApp: [+91 97277 92839](tel:+919727792839)**
+>
+> _Some databases (Cassandra, Redis, Neo4j) spin down on inactivity and AI queries (Claude Haiku) incur API costs — so access is shared on request rather than left fully open. Happy to walk you through a live demo too._
 
 ---
 
@@ -54,12 +64,6 @@ Built to demonstrate deep understanding of database paradigms and system design 
 ![InfluxDB](./screenshots/influxdb.png)
 
 > 📁 **To add screenshots:** Save the images to a `screenshots/` folder in the repo root with the filenames above.
-
----
-
-## 🚀 Live Demo
-
-**[sql-nextjs.vercel.app](https://sql-nextjs.vercel.app)** — Password-protected. Session valid for 7 days.
 
 ---
 
